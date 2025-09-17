@@ -1,0 +1,309 @@
+﻿@{
+    ViewData["Title"] = "SPA";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>CRUD in Single Page App</h2>
+
+<div id="list">
+    <h3>List of Contact</h3>
+    <a href="#" onclick="addNew();">Create New</a>
+    <table style="width:100%" border="1">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Gender</th>
+                <th>Date</th>
+                <th>#</th>
+                <th>#</th>
+            </tr>
+        </thead>
+        <tbody id="listContact">
+        </tbody>
+    </table>
+</div>
+<div id="form">
+    <table>
+        <tr>
+            <td>
+                <h3>Create Contact</h3>
+                <a href="#" onclick="loadView('list');">List of Contact</a>
+                <div>
+                    <input type="hidden" id="Id" />
+                    Name: <input type="text" id="ContactName" />
+                </div>
+                <div>
+                    Sales Type:
+                    <select id="ContactType"></select>
+                </div>
+                <div>
+                    Date of Birth: <input type="date" id="DateOfBirth" />
+                </div>
+                <div>
+                    Gender:
+                    <input type="radio" id="Male" name="Gender" value="Male" /> Male
+                    <input type="radio" id="Female" name="Gender" value="Female" /> Female
+                </div>
+                <div>
+                    <button type="button" onclick="insert();" id="btnInsert">Save</button>
+                    <button type="button" onclick="update();" id="btnUpdate">Update</button>
+                </div>
+            </td>
+            <td>
+                <h3>Create Sub-Contact</h3>
+                <div>
+                    <input type="hidden" id="SubContactId" />
+                    Name: <input type="text" id="SubContactName" />
+                    <input type="button" value="Add Sub" onclick="addSub()" />
+                </div>
+                <table style="width:100%" border="1">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>#</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listSubContact">
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<script>
+    function loadView(view) {
+        if (view == 'form') {
+            document.getElementById('list').style.display = 'none';
+            document.getElementById('form').style.display = '';
+            this.getContactTypes();
+        } else {
+            document.getElementById('list').style.display = '';
+            document.getElementById('form').style.display = 'none';
+            this.getAll();
+        }
+    }
+    
+    /*$(document).ready(function () {
+        console.log("ready!");
+    });*/
+    this.loadView('list');
+
+    var Contact = {
+        "id": 0,
+        "contactName": "",
+        "contactType": "",
+        "dateOfBirth": "",
+        "gender": "",
+        "subContacts":[]
+    };
+    
+    function addNew() {
+        this.loadView('form');
+        this.reset();
+        document.getElementById('btnInsert').style.display = '';
+        document.getElementById('btnUpdate').style.display = 'none';
+    }
+
+    function insert() {
+        Contact.id = 0;
+        Contact.contactName = document.getElementById('ContactName').value;
+        Contact.dateOfBirth = document.getElementById('DateOfBirth').value;
+        Contact.contactType = document.getElementById('ContactType').value;
+        var Gender = document.getElementById("Male").checked === true ? 'Male' : 'Female';
+        Contact.gender = Gender;
+        var strJson = JSON.stringify(Contact);
+        var http = new XMLHttpRequest();
+        var url = '/Sales/ContactAdd';
+        http.open('POST', url, true);
+        //http.setRequestHeader('Content-type', 'multipart/form-data');
+        http.setRequestHeader("Content-type", "application/json");
+        http.onreadystatechange = function () {
+            if (http.readyState == 4 && http.status == 200) {
+                if (http.responseText != null) {
+                    var res = JSON.parse(http.responseText);
+                    if (res != null) {
+                        if (res.resstate == true) {
+                            alert('Save successfully.');
+                            loadView('list');
+                        }
+                    }
+                }
+            }
+        }
+        http.send(strJson);
+    }
+
+    function update() {
+        Contact.id = document.getElementById('Id').value;
+        Contact.contactName = document.getElementById('ContactName').value;
+        Contact.dateOfBirth = document.getElementById('DateOfBirth').value;
+        Contact.contactType = document.getElementById('ContactType').value;
+        var Gender = document.getElementById("Male").checked === true ? 'Male' : 'Female';
+        Contact.gender = Gender;
+        var http = new XMLHttpRequest();
+        var url = '/Sales/ContactEdit';
+        //Contact.subContacts = [];
+        var strJson = JSON.stringify(Contact);
+        http.open('PUT', url, true);
+        http.setRequestHeader("Content-type", "application/json");
+        http.onreadystatechange = function () {
+            if (http.readyState == 4 && http.status == 200) {
+                if (http.responseText != null) {
+                    var res = JSON.parse(http.responseText);
+                    if (res != null) {
+                        if (res.resstate == true) {
+                            alert('Update successfully.');
+                            loadView('list');
+                        }
+                    }
+                }
+            }
+        }
+        http.send(strJson);
+    }
+
+    function deleteContact(id) {
+        var http = new XMLHttpRequest();
+        var url = '/Sales/ContactRemove?id=' + id;
+        http.open('DELETE', url, true);
+        http.setRequestHeader('Content-type', 'application/json'); //application/x-www-form-urlencoded
+        http.onreadystatechange = function () {
+            if (http.readyState == 4 && http.status == 200) {
+                if (http.responseText != null) {
+                    var res = JSON.parse(http.responseText);
+                    if (res.resstate == true) {
+                        alert('Remove successfully.');
+                        loadView('list');
+                    }
+                }
+            }
+        }
+        http.send();
+    }
+
+    function edit(id) {
+        this.loadView('form');
+        document.getElementById('btnInsert').style.display = 'none';
+        document.getElementById('btnUpdate').style.display = '';
+        this.getById(id);
+    }
+
+    function remove(id) {
+        var isConfirm = confirm('Are you sure to delete?');
+        if (isConfirm) {
+            this.deleteContact(id);
+        }
+    }
+
+    function reset() {
+        document.getElementById('Id').value = '';
+        document.getElementById('ContactName').value = '';
+        //document.getElementById('country').value = '';
+        document.getElementById('DateOfBirth').value = '';
+        document.getElementById("Male").checked = false;
+        document.getElementById("Female").checked = false;
+        Contact.id = 0;
+        Contact.contactName = '';
+        Contact.contactType = '';
+        Contact.dateOfBirth = '';
+        Contact.gender = '';
+        Contact.subContacts = [];
+    }
+
+    function getContactTypes() {
+        var options = '<option value="Foreign">Foreign</option><option value="Local">Local</option>'
+        document.getElementById('ContactType').innerHTML = options;
+    }
+
+    function getAll() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/Sales/Contacts', true);
+        xhr.onload = function () {
+            var tbody = '';
+            var listContact = JSON.parse(this.responseText);
+            for (var i = 0; i < listContact.length; i++) {
+                var tr = '<tr>'
+                    + '<td>' + listContact[i].contactName + '</td>'
+                    + '<td>' + listContact[i].gender + '</td>'
+                    + '<td>' + listContact[i].dateOfBirth + '</td>'
+                    + '<td><a href="#" onclick="remove(' + listContact[i].id +')">Delete</a></td>'
+                    + '<td><a href="#" onclick="edit(' + listContact[i].id+')">Edit</a></td>'
+                    + '<tr>';
+                tbody += tr;
+            }
+            document.getElementById('listContact').innerHTML = tbody;
+        };
+        xhr.send();
+    }
+
+    function getById(id) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/Sales/Contact?id=' + id, true);
+        xhr.onload = function () {
+            Contact = JSON.parse(this.responseText);
+            document.getElementById('Id').value = Contact.id;
+            document.getElementById('ContactName').value = Contact.contactName;
+            document.getElementById('DateOfBirth').value = formatDate(Contact.dateOfBirth);
+            document.getElementById("Male").checked = Contact.gender == 'Male' ? true : false;
+            document.getElementById("Female").checked = Contact.gender == 'Female' ? true : false;
+            var tbody = '';
+            for (var i = 0; i < Contact.subContacts.length; i++) {
+                var tr = '<tr>'
+                    + '<td>' + Contact.subContacts[i].name + '</td>'
+                    + '<td><a href="#" onclick="removeSub(' + Contact.subContacts[i].id + ')">Delete</a></td>'
+                    + '<tr>';
+                tbody += tr;
+            }
+            document.getElementById('listSubContact').innerHTML = tbody;
+        };
+        xhr.send();
+    }
+
+    function formatDate(date) {
+        var d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+
+        if (month.length < 2) {
+            month = '0' + month;
+        }
+        if (day.length < 2) {
+            day = '0' + day;
+        }
+        return [year, month, day].join('-');
+    }
+
+    function addSub(){
+        document.getElementById('listSubContact').innerHTML = '';
+        var oSubContact ={ id:0,name:'',contactId:0};
+        oSubContact.id = new Date().getSeconds();
+        oSubContact.name = document.getElementById('SubContactName').value;
+        Contact.subContacts.push(oSubContact);
+        var tbody = '';
+        for (var i = 0; i < Contact.subContacts.length; i++) {
+            var tr = '<tr>'
+                + '<td>' + Contact.subContacts[i].name + '</td>'
+                + '<td><a href="#" onclick="removeSub(' + Contact.subContacts[i].id + ')">Delete</a></td>'
+                + '<tr>';
+            tbody += tr;
+        }
+        document.getElementById('listSubContact').innerHTML = tbody;
+        document.getElementById('SubContactName').value = '';
+    }
+
+    function removeSub(id) {
+        Contact.subContacts = Contact.subContacts.filter(x => x.id != id);
+        var tbody = '';
+        for (var i = 0; i < Contact.subContacts.length; i++) {
+            var tr = '<tr>'
+                + '<td>' + Contact.subContacts[i].name + '</td>'
+                + '<td><a href="#" onclick="removeSub(' + Contact.subContacts[i].id + ')">Delete</a></td>'
+                + '<tr>';
+            tbody += tr;
+        }
+        document.getElementById('listSubContact').innerHTML = tbody;
+    }
+</script>
+

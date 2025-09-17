@@ -15,7 +15,7 @@ namespace CoreMvcEfCoreCode1st.Models
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer("Server=100.120.2.70;Database=SalesDb;User Id=sa;Password=@sa12345#;");
+            optionsBuilder.UseSqlServer("Server=localhost;Database=SalesDb;User Id=sa;Password=123;");
         }
     }
 }
